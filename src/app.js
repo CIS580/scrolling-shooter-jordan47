@@ -6,11 +6,94 @@ const Vector = require('./vector');
 const Camera = require('./camera');
 const Player = require('./player');
 const BulletPool = require('./bullet_pool');
+const Tilemap = require('./tilemap.js');
+const Enemies = require('./enemies.js');
+const Powerup = require('./powerup.js')
 
 
 /* Global variables */
 var canvas = document.getElementById('screen');
 var game = new Game(canvas, update, render);
+var frame = 0;
+var spawntimer = 5 * Math.random();
+var groundLv1 = require('../assets/groundLv1.json');
+var groundLv2 = require('../assets/groundLv2.json');
+var midLv1 = require('../assets/midLv1.json');
+var midLv2 = require('../assets/midLv2.json');
+var midLv3 = require('../assets/midLv3.json');
+var highLv1 = require('../assets/highLv1.json');
+var highLv2 = require('../assets/highLv2.json');
+var highLv3 = require('../assets/highLv3.json');
+var powerupArr = [];
+var powerup1 = new Powerup(3000);
+var powerup2 = new Powerup(1500);
+var powerup3 = new Powerup(700);
+powerup1.img = new Image();
+powerup1.img.src = encodeURI('assets/powerup1.png');
+powerup2.img = new Image();
+powerup2.img.src = encodeURI('assets/powerup2.png');
+powerup3.img = new Image();
+powerup3.img.src = encodeURI('assets/powerup3.png');
+powerupArr.push(powerup1);
+powerupArr.push(powerup2);
+powerupArr.push(powerup3);
+var tilemaps = [];
+
+tilemaps.push(new Tilemap(groundLv1, {
+    onload: function() {
+      checkIfLoaded();
+    }
+}));
+
+tilemaps.push(new Tilemap(midLv1, {
+    onload: function() {
+      checkIfLoaded();
+    }
+}));
+
+tilemaps.push(new Tilemap(highLv1, {
+    onload: function() {
+      checkIfLoaded();
+    }
+}));
+
+tilemaps.push(new Tilemap(groundLv2, {
+    onload: function() {
+      checkIfLoaded();
+    }
+}));
+
+tilemaps.push(new Tilemap(midLv2, {
+    onload: function() {
+      checkIfLoaded();
+    }
+}));
+
+tilemaps.push(new Tilemap(highLv2, {
+    onload: function() {
+      checkIfLoaded();
+    }
+}));
+
+tilemaps.push(new Tilemap(midLv3, {
+    onload: function() {
+      checkIfLoaded();
+    }
+}));
+
+tilemaps.push(new Tilemap(highLv3, {
+    onload: function() {
+      checkIfLoaded();
+    }
+}));
+
+var numLayers = 8;
+function checkIfLoaded()
+{
+  numLayers--;
+  if(numLayers == 0) masterLoop(performance.now());
+}
+
 var input = {
   up: false,
   down: false,
@@ -21,6 +104,7 @@ var camera = new Camera(canvas);
 var bullets = new BulletPool(10);
 var missiles = [];
 var player = new Player(bullets, missiles);
+var enemies = new Enemies(player);
 
 /**
  * @function onkeydown
@@ -48,7 +132,12 @@ window.onkeydown = function(event) {
       input.right = true;
       event.preventDefault();
       break;
+    case "m":
+      input.firing = true;
+      event.preventDefault();
+      break;
   }
+
 }
 
 /**
@@ -77,7 +166,11 @@ window.onkeyup = function(event) {
       input.right = false;
       event.preventDefault();
       break;
-  }
+    case "m":
+      input.firing = false;
+      event.preventDefault();
+      break;
+    }
 }
 
 /**
@@ -100,9 +193,16 @@ masterLoop(performance.now());
  * the number of milliseconds passed since the last frame.
  */
 function update(elapsedTime) {
+  /*powerupArr.forEach(function(powerup)
+  {
+    checkPowerupCollisions(player, powerup);
+  });*/
+  //update the enemies
+  enemies.update(player);
 
   // update the player
   player.update(elapsedTime, input);
+  console.log(player.position.y);
 
   // update the camera
   camera.update(player.position);
@@ -126,6 +226,13 @@ function update(elapsedTime) {
   });
 }
 
+/*function checkPowerupCollisions(player, powerup)
+{
+  player.position.x < powerup.x + 24 &&
+   player.position.x + 16 > powerup.x &&
+   player.position.y < powerup.y + rect2.height &&
+   rect1.height + rect1.y > rect2.y)
+}*/
 /**
   * @function render
   * Renders the current game state into a back buffer.
@@ -134,10 +241,11 @@ function update(elapsedTime) {
   * @param {CanvasRenderingContext2D} ctx the context to render to
   */
 function render(elapsedTime, ctx) {
-  ctx.fillStyle = "black";
-  ctx.fillRect(0, 0, 1024, 786);
+  // Render the enemies
+  enemies.render(elapsedTime, ctx);
 
-  // TODO: Render background
+  // Render the backgrounds
+  renderBackgrounds(elapsedTime, ctx);
 
   // Transform the coordinate system using
   // the camera position BEFORE rendering
@@ -152,6 +260,95 @@ function render(elapsedTime, ctx) {
   // Render the GUI without transforming the
   // coordinate system
   renderGUI(elapsedTime, ctx);
+}
+
+/**
+  * @function renderBackgrounds
+  * Renders the parallax scrolling backgrounds.
+  * From heli in-class assignment
+  * @param {DOMHighResTimeStamp} elapsedTime
+  * @param {CanvasRenderingContext2D} ctx the context to render to
+  */
+function renderBackgrounds(elapsedTime, ctx) {
+  var worldCtx = ctx;
+  if(player.level == 1)
+  {
+    ctx.save();
+
+    ctx.translate(0, (-camera.y * 0.2) - 1200);
+    tilemaps[0].render(ctx);
+    ctx.restore();
+
+    ctx.save();
+
+    ctx.translate(0, (-camera.y * 0.4) + 300);
+    tilemaps[1].render(ctx);
+    ctx.restore();
+
+    ctx.save();
+
+    ctx.translate(0, (-camera.y + 400));
+    tilemaps[2].render(ctx);
+    ctx.restore();
+  }
+  if(player.level == 2)
+  {
+    ctx.save();
+
+    ctx.translate(0, (-camera.y * 0.2) - 1200);
+    tilemaps[3].render(ctx);
+    ctx.restore();
+
+    ctx.save();
+
+    ctx.translate(0, (-camera.y * 0.4) + 300);
+    tilemaps[4].render(ctx);
+    ctx.restore();
+
+    ctx.save();
+
+    ctx.translate(0, (-camera.y + 400));
+    tilemaps[5].render(ctx);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(0, (-camera.y + 400));
+    ctx.drawImage(
+      powerup2,
+      0, 0, 24, 28,
+      150, 3000, 48, 56
+    );
+    ctx.restore();
+  }
+  if(player.level == 3)
+  {
+    ctx.fillStyle = 'black'
+    ctx.fillRect(0,0, canvas.width, canvas.height);
+
+    ctx.save();
+
+    ctx.translate(0, (-camera.y * 0.4) + 300);
+    tilemaps[6].render(ctx);
+    ctx.restore();
+
+    ctx.save();
+
+    ctx.translate(0, (-camera.y + 400));
+    tilemaps[7].render(ctx);
+    ctx.restore();
+
+  }
+  ctx.save();
+  ctx.translate(0, (-camera.y + 400));
+  powerupArr.forEach(function(powerup)
+  {
+    worldCtx.drawImage(
+      powerup.img,
+      0, 0, 24, 28,
+      150, powerup.y, 48, 56
+    );
+  });
+  ctx.restore();
 }
 
 /**

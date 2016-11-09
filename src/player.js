@@ -2,7 +2,7 @@
 
 /* Classes and Libraries */
 const Vector = require('./vector');
-const Missile = require('./missile');
+//const Missile = require('./missile');
 
 /* Constants */
 const PLAYER_SPEED = 5;
@@ -24,10 +24,14 @@ function Player(bullets, missiles) {
   this.missileCount = 4;
   this.bullets = bullets;
   this.angle = 0;
-  this.position = {x: 200, y: 200};
+  this.position = {x: 200, y: 8000};
   this.velocity = {x: 0, y: 0};
-  this.img = new Image()
+  this.img = new Image();
   this.img.src = 'assets/tyrian.shp.007D3C.png';
+  this.health = 100;
+  this.level = 1;
+  this.powerupState = 0;
+  this.weaponDamage = 10;
 }
 
 /**
@@ -41,11 +45,15 @@ Player.prototype.update = function(elapsedTime, input) {
 
   // set the velocity
   this.velocity.x = 0;
+  var newVelo = {x: 0, y: -BULLET_SPEED};
   if(input.left) this.velocity.x -= PLAYER_SPEED;
   if(input.right) this.velocity.x += PLAYER_SPEED;
   this.velocity.y = 0;
   if(input.up) this.velocity.y -= PLAYER_SPEED / 2;
   if(input.down) this.velocity.y += PLAYER_SPEED / 2;
+  if(input.firing) this.bullets.add(this.position, newVelo);
+
+
 
   // determine player angle
   this.angle = 0;
@@ -58,8 +66,14 @@ Player.prototype.update = function(elapsedTime, input) {
 
   // don't let the player move off-screen
   if(this.position.x < 0) this.position.x = 0;
-  if(this.position.x > 1024) this.position.x = 1024;
-  if(this.position.y > 786) this.position.y = 786;
+  if(this.position.x > 384) this.position.x = 384;
+  if(this.position.y < 200)
+  {
+    this.position.y = 200;
+    this.level++;
+    resetPos(this);
+  }
+  if(this.position.y > 3884) this.position.y = 3884;
 }
 
 /**
@@ -85,6 +99,11 @@ Player.prototype.fireBullet = function(direction) {
   var position = Vector.add(this.position, {x:30, y:30});
   var velocity = Vector.scale(Vector.normalize(direction), BULLET_SPEED);
   this.bullets.add(position, velocity);
+}
+
+function resetPos(ctx)
+{
+  ctx.position = {x: 200, y: 8000};
 }
 
 /**
